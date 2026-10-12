@@ -26,12 +26,12 @@ Ajusta o **Qwen3.5** com LoRA nas conversas da Iris e exporta o modelo **iris-1*
 
 **RunPod (recomendado, A100 80 GB, ~US$ 1,5/h)**
 1. Crie um pod com o template **PyTorch** e GPU **A100 80 GB**, abra o **Jupyter Lab**.
-2. Envie este notebook e o `synthetic.jsonl` para `/workspace/iris-1/`, escolha o `SIZE` e rode tudo.
+2. Envie este notebook e o `iris-1-dados.jsonl` para `/workspace/iris-1/`, escolha o `SIZE` e rode tudo.
 3. Baixe a pasta `/workspace/iris-1/gguf-<tamanho>` e **desligue o pod** (a cobrança é por hora ligada).
 
 **Google Colab**
 1. Em **Ambiente de execução > Alterar o tipo de ambiente**, escolha **A100** (Colab Pro) ou **T4** para o `2b`.
-2. Rode tudo e, quando pedir, envie o `synthetic.jsonl`. O resultado fica no Drive em `iris-1/`.
+2. Rode tudo e, quando pedir, envie o `iris-1-dados.jsonl`. O resultado fica no Drive em `iris-1/`.
 """),
     code("""
 SIZE = "9b"  # 9b, 4b ou 2b
@@ -61,12 +61,12 @@ if IN_COLAB:
 else:
     OUT = "/workspace/iris-1"
 
-DATA = f"{OUT}/synthetic.jsonl"
+DATA = f"{OUT}/iris-1-dados.jsonl"
 os.makedirs(OUT, exist_ok=True)
 if not os.path.exists(DATA):
     if not IN_COLAB:
-        raise SystemExit(f"Envie o synthetic.jsonl para {DATA} pelo Jupyter Lab e rode de novo")
-    print("Envie o synthetic.jsonl:")
+        raise SystemExit(f"Envie o iris-1-dados.jsonl para {DATA} pelo Jupyter Lab e rode de novo")
+    print("Envie o iris-1-dados.jsonl:")
     uploaded = files.upload()
     with open(DATA, "wb") as f:
         f.write(next(iter(uploaded.values())))

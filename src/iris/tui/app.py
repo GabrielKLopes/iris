@@ -11,7 +11,9 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Center, Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen
-from textual.widgets import Button, Input, Markdown, Static
+from rich.text import Text
+from textual.widgets import Button, Input, Markdown, OptionList, Static
+from textual.widgets.option_list import Option
 
 from iris import __version__
 from iris.application.content_policy import REFUSAL, ContentPolicy
@@ -57,14 +59,22 @@ STATES = {
     "answering": ("respondendo", 1.0),
     "tool": ("trabalhando", 0.8),
 }
-HELP = """**Comandos**
-
-- `/nova` começa uma conversa nova
-- `/memoria` mostra o que ela sabe sobre você · `/lembrar fato` ensina · `/esquecer número` apaga
-- `/biblioteca` lista os sites e documentos aprendidos · `/aprender link, arquivo ou pasta`
-- `/limpar` limpa a tela · `/sair` fecha
-
-Setas para cima e para baixo trazem mensagens anteriores."""
+COMMANDS = (
+    ("help", "mostra os comandos", False),
+    ("new", "começa uma conversa nova", False),
+    ("clear", "limpa a tela", False),
+    ("memory", "mostra o que ela sabe sobre você", False),
+    ("remember", "ensina um fato, ex.: /remember moro em Recife", True),
+    ("forget", "apaga um fato pelo número, ex.: /forget 6", True),
+    ("library", "lista os sites e documentos aprendidos", False),
+    ("learn", "aprende um link, arquivo ou pasta", True),
+    ("model", "mostra qual modelo está respondendo", False),
+    ("exit", "fecha a Iris", False),
+)
+NEEDS_ARGUMENT = {name for name, _, takes in COMMANDS if takes}
+HELP = "**Comandos**\n\n" + "\n".join(f"- `/{name}` {description}" for name, description, _ in COMMANDS) + (
+    "\n\nDigite `/` para ver a lista. Setas para cima e para baixo trazem mensagens anteriores."
+)
 
 
 def describe(call) -> str:
@@ -155,7 +165,19 @@ class ToolLine(Static):
 
 
 class HistoryInput(Input):
-    BINDINGS = [Binding("up", "older", show=False), Binding("down", "newer", show=False)]
+    BINDINGS = [
+        Binding("up", "older", show=False),
+        Binding("down", "newer", show=False),
+        Binding("tab", "complete", show=False, priority=True),
+        Binding("escape", "close_menu", show=False),
+    ]
+
+    def action_complete(self) -> None:
+        if self.app.menu_visible():
+            self.app.complete_command()
+
+    def action_close_menu(self) -> None:
+        self.app.hide_menu()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -168,12 +190,18 @@ class HistoryInput(Input):
         self.position = len(self.history)
 
     def action_older(self) -> None:
+        if self.app.menu_visible():
+            self.app.menu_move(-1)
+            return
         if self.history and self.position > 0:
             self.position -= 1
             self.value = self.history[self.position]
             self.cursor_position = len(self.value)
 
     def action_newer(self) -> None:
+        if self.app.menu_visible():
+            self.app.menu_move(1)
+            return
         if self.position < len(self.history) - 1:
             self.position += 1
             self.value = self.history[self.position]
@@ -226,12 +254,13 @@ class IrisApp(App):
                         for index, text in enumerate(SUGGESTIONS):
                             yield Button(f"› {text}", id=f"suggestion-{index}", classes="suggestion")
                 with Vertical(id="bottom"):
+                    yield OptionList(id="commands")
                     with Horizontal(id="replies"):
                         yield Button("Sim, pode", id="yes")
                         yield Button("Não", id="no")
                     yield HistoryInput(placeholder="Fale com a Iris…", id="prompt")
                     with Horizontal(id="status"):
-                        yield Static("enter envia  ·  ↑ histórico  ·  /ajuda", id="hints")
+                        yield Static("enter envia  ·  ↑ histórico  ·  / comandos", id="hints")
                         yield Static("ctrl+n nova  ·  ctrl+c sair", id="keys")
 
     def on_mount(self) -> None:
@@ -358,8 +387,64 @@ class IrisApp(App):
         self.set_state("thinking" if busy else "idle")
         self.query_one("#replies").set_class(not busy and self.awaiting_confirmation, "visible")
 
+    def menu(self) -> OptionList:
+        return self.query_one("#commands", OptionList)
+
+    def menu_visible(self) -> bool:
+        return self.menu().has_class("visible")
+
+    def hide_menu(self) -> None:
+        self.menu().remove_class("visible")
+
+    def menu_move(self, step: int) -> None:
+        menu = self.menu()
+        if menu.option_count:
+            menu.highlighted = ((menu.highlighted or 0) + step) % menu.option_count
+
+    @on(Input.Changed, "#prompt")
+    def typing(self, event: Input.Changed) -> None:
+        value = event.value
+        if not value.startswith("/") or " " in value:
+            self.hide_menu()
+            return
+        typed = value[1:].lower()
+        matches = [(name, description) for name, description, _ in COMMANDS if name.startswith(typed)]
+        menu = self.menu()
+        menu.clear_options()
+        if not matches:
+            self.hide_menu()
+            return
+        for name, description in matches:
+            label = Text.assemble((f"/{name:<10}", "bold #e9b04c"), (description, "#a0968a"))
+            menu.add_option(Option(label, id=name))
+        menu.highlighted = 0
+        menu.add_class("visible")
+
+    def complete_command(self, run: bool = False) -> None:
+        menu = self.menu()
+        if menu.highlighted is None:
+            return
+        name = menu.get_option_at_index(menu.highlighted).id
+        prompt = self.query_one("#prompt", HistoryInput)
+        self.hide_menu()
+        if name in NEEDS_ARGUMENT or not run:
+            prompt.value = f"/{name} " if name in NEEDS_ARGUMENT else f"/{name}"
+            prompt.cursor_position = len(prompt.value)
+            prompt.focus()
+            return
+        prompt.value = ""
+        prompt.remember(f"/{name}")
+        self.command(f"/{name}")
+
+    @on(OptionList.OptionSelected, "#commands")
+    def command_clicked(self, event: OptionList.OptionSelected) -> None:
+        self.complete_command(run=True)
+
     @on(Input.Submitted, "#prompt")
     def submitted(self, event: Input.Submitted) -> None:
+        if self.menu_visible():
+            self.complete_command(run=True)
+            return
         text = event.value.strip()
         prompt = self.query_one("#prompt", HistoryInput)
         prompt.value = ""
@@ -419,41 +504,46 @@ class IrisApp(App):
 
     def command(self, text: str) -> None:
         name, _, arg = text.partition(" ")
+        name = name.lstrip("/").lower()
         arg = arg.strip()
-        if name in ("/sair", "/exit", "/quit"):
+        if name in ("exit", "quit"):
             self.exit()
-        elif name == "/nova":
+        elif name == "new":
             self.action_new_chat()
-        elif name == "/limpar":
+        elif name == "clear":
             self.action_clear()
-        elif name == "/ajuda":
+        elif name == "help":
             self.add_iris_text(HELP)
-        elif name == "/memoria":
+        elif name == "memory":
             self.show_memory()
-        elif name == "/lembrar" and arg:
+        elif name == "remember" and arg:
             from iris.knowledge.sqlite_memory import SQLiteMemory
 
             fact = SQLiteMemory(self.settings.memory_file).remember(arg)
             self.add_notice(f"Guardado como #{fact.id}.")
             self.load_counts()
-        elif name == "/esquecer" and arg.lstrip("#").isdigit():
+        elif name == "forget" and arg.lstrip("#").isdigit():
             from iris.knowledge.sqlite_memory import SQLiteMemory
 
             forgotten = SQLiteMemory(self.settings.memory_file).forget(int(arg.lstrip("#")))
-            self.add_notice("Esquecido." if forgotten else "Não encontrei esse fato. Veja os números com /memoria.")
+            self.add_notice("Esquecido." if forgotten else "Não encontrei esse fato. Veja os números com /memory.")
             self.load_counts()
-        elif name == "/biblioteca":
+        elif name == "library":
             self.show_library()
-        elif name == "/aprender" and arg:
+        elif name == "learn" and arg:
             self.learn(arg)
+        elif name == "model":
+            self.add_notice(f"Respondendo com {str(self.query_one('#model', Static).render()).replace(chr(10), ' · ')}.")
+        elif name in NEEDS_ARGUMENT:
+            self.add_notice(f"Faltou o complemento. Exemplo: {dict((n, d) for n, d, _ in COMMANDS)[name].split('ex.: ')[-1]}")
         else:
-            self.add_notice("Comando desconhecido. /ajuda mostra os comandos.")
+            self.add_notice("Comando desconhecido. Digite / para ver a lista.")
 
     def show_memory(self) -> None:
         from iris.knowledge.sqlite_memory import SQLiteMemory
 
         facts = SQLiteMemory(self.settings.memory_file).all()
-        body = "\n".join(f"- `#{f.id}` {f.content}" for f in facts) or "Ela ainda não sabe nada sobre você. Ensine com `/lembrar fato`."
+        body = "\n".join(f"- `#{f.id}` {f.content}" for f in facts) or "Ela ainda não sabe nada sobre você. Ensine com `/remember fato`."
         self.add_iris_text(f"**O que eu sei sobre você**\n\n{body}")
 
     @work(thread=True, group="library")
@@ -462,7 +552,7 @@ class IrisApp(App):
 
         sources = library_for(self.settings, index_in_background=False).sources()
         body = "\n".join(f"- **{title}** · {count} trechos  \n  {source}" for title, source, count in sources)
-        self.call_from_thread(self.add_iris_text, f"**Biblioteca**\n\n{body or 'Vazia. Ensine com `/aprender link, arquivo ou pasta`.'}")
+        self.call_from_thread(self.add_iris_text, f"**Biblioteca**\n\n{body or 'Vazia. Ensine com `/learn link, arquivo ou pasta`.'}")
 
     @work(thread=True, group="library")
     def learn(self, source: str) -> None:

@@ -182,6 +182,25 @@ MarkdownFence {
     padding: 0 4 0 3;
 }
 
+#commands {
+    display: none;
+    height: auto;
+    max-height: 12;
+    margin: 0 0 0 0;
+    padding: 0 1;
+    background: #15120e;
+    border: round #3a3128;
+    scrollbar-size-vertical: 1;
+}
+
+#commands.visible {
+    display: block;
+}
+
+#commands > .option-list--option-highlighted {
+    background: #2a2016;
+}
+
 #replies {
     height: auto;
     display: none;

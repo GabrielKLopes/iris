@@ -59,7 +59,7 @@ iris library learn https://docs.docker.com/compose/
 iris memory list
 ```
 
-No terminal, `/ajuda` mostra os comandos: `/nova`, `/memoria`, `/lembrar`, `/biblioteca`, `/aprender`.
+No terminal, digite `/` para abrir a lista de comandos: `/new`, `/memory`, `/remember`, `/forget`, `/library`, `/learn`, `/model`, `/help`.
 
 ## Sua, de verdade
 

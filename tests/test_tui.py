@@ -55,13 +55,13 @@ def test_slash_commands(tmp_path):
         app = make_app(tmp_path)
         async with app.run_test(size=(100, 40)) as pilot:
             await pilot.click("#prompt")
-            await pilot.press(*"/lembrar moro em Recife", "enter")
-            await pilot.press(*"/memoria", "enter")
+            await pilot.press(*"/remember moro em Recife", "enter")
+            await pilot.press(*"/memory", "enter")
             await pilot.pause()
             text = " ".join(str(w.render()) for w in app.query("Static"))
             assert "Guardado como #1" in text
 
-            await pilot.press(*"/nova", "enter")
+            await pilot.press(*"/new", "enter")
             await pilot.pause()
             assert app.engine.questions == []
 
@@ -73,8 +73,31 @@ def test_history_with_arrow_keys(tmp_path):
         app = make_app(tmp_path)
         async with app.run_test(size=(100, 40)) as pilot:
             await pilot.click("#prompt")
-            await pilot.press(*"/ajuda", "enter")
+            await pilot.press(*"oi", "enter")
+            await app.workers.wait_for_complete()
             await pilot.press("up")
-            assert app.query_one("#prompt").value == "/ajuda"
+            assert app.query_one("#prompt").value == "oi"
+
+    asyncio.run(scenario())
+
+
+def test_slash_opens_the_command_menu_and_completes(tmp_path):
+    async def scenario():
+        app = make_app(tmp_path)
+        async with app.run_test(size=(110, 40)) as pilot:
+            await pilot.click("#prompt")
+            await pilot.press("/")
+            assert app.menu_visible() and app.menu().option_count == 10
+            await pilot.press("r", "e")
+            assert app.menu().option_count == 1
+            await pilot.press("tab")
+            assert app.query_one("#prompt").value == "/remember "
+            await pilot.press(*"tenho um gato", "enter")
+            await pilot.pause()
+            assert "Guardado como #1" in " ".join(str(w.render()) for w in app.query("Static"))
+
+            await pilot.press("/", "h", "enter")
+            await pilot.pause()
+            assert not app.menu_visible()
 
     asyncio.run(scenario())
