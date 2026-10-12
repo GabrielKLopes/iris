@@ -435,9 +435,14 @@ class IrisApp(App):
         self.mount_message(line)
 
     def end_tool(self, call, result) -> None:
+        from iris.tui.previews import preview_for
+
         line = self.tools.pop(call.id, None)
         if line:
             line.finish(not result.is_error)
+            preview = preview_for(call, result, self.language)
+            if preview is not None:
+                self.log_widget().mount(preview, after=line)
         if "Confirmation code" in result.content:
             self.awaiting_confirmation = True
         self.set_state("thinking")

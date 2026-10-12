@@ -182,6 +182,37 @@ MarkdownFence {
     color: #e5644f;
 }
 
+.preview {
+    margin: 0 0 0 4;
+    padding: 0;
+    border: none;
+    background: #0d0b09;
+    height: auto;
+}
+
+.preview > CollapsibleTitle {
+    color: #6f665b;
+    background: #0d0b09;
+    padding: 0;
+}
+
+.preview > CollapsibleTitle:hover, .preview > CollapsibleTitle:focus {
+    color: #e9b04c;
+    background: #0d0b09;
+}
+
+.preview > Contents {
+    padding: 0 0 0 2;
+    border-left: vkey #2a231b;
+    height: auto;
+}
+
+.preview Markdown {
+    background: #0d0b09;
+    margin: 0;
+    padding: 0;
+}
+
 .notice {
     margin: 1 0 0 2;
     color: #6f665b;

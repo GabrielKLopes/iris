@@ -5,6 +5,10 @@ ANSWER_LANGUAGE = {"en": "English", "pt": "Brazilian Portuguese"}
 
 STRINGS: dict[str, dict[str, str]] = {
     "en": {
+        "preview.more": "… {count} more lines",
+        "preview.lines": "{count} lines",
+        "preview.sources": "{count} sources found",
+        "preview.result": "show the result",
         "key.status": "API keys (stored in the Windows Credential Manager)",
         "key.set": "configured",
         "key.unset": "not set",
@@ -122,6 +126,10 @@ STRINGS: dict[str, dict[str, str]] = {
         "tool.start_code_change": "Changing her own code",
     },
     "pt": {
+        "preview.more": "… mais {count} linhas",
+        "preview.lines": "{count} linhas",
+        "preview.sources": "{count} fontes encontradas",
+        "preview.result": "ver o resultado",
         "key.status": "Chaves de API (guardadas no Gerenciador de Credenciais do Windows)",
         "key.set": "configurada",
         "key.unset": "não configurada",
