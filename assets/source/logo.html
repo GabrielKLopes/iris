@@ -1,0 +1,46 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:transparent}canvas{display:block}</style></head>
+<body><canvas id="c" width="1024" height="1024"></canvas>
+<script>
+const params = new URLSearchParams(location.search);
+const density = Number(params.get("density") || 900);
+const glowAlpha = Number(params.get("glow") || 0.55);
+const tile = params.get("tile") === "1";
+const weight = Number(params.get("weight") || 1);
+const c = document.getElementById("c"), ctx = c.getContext("2d");
+let seed = 7; const rand = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
+const strands = Array.from({ length: density }, () => ({
+  r: rand() < 0.66 ? 0.88 + rand() * 0.13 : 0.32 + rand() * 0.52,
+  lat: Math.asin(rand() * 2 - 1), lon: rand() * Math.PI * 2,
+  len: 0.04 + rand() * rand() * 0.3, b: 0.35 + rand() * 0.65,
+}));
+const rings = Array.from({ length: 6 }, () => ({ r: 0.55 + rand() * 0.45, tx: (rand() - 0.5) * Math.PI, tz: (rand() - 0.5) * Math.PI, s: rand() * 6, span: Math.PI * (0.5 + rand() * 1.2) }));
+const rot = (p, yaw, pitch) => { const x = p.x * Math.cos(yaw) + p.z * Math.sin(yaw), z = -p.x * Math.sin(yaw) + p.z * Math.cos(yaw); return { x, y: p.y * Math.cos(pitch) - z * Math.sin(pitch), z: p.y * Math.sin(pitch) + z * Math.cos(pitch) }; };
+const sph = (r, lat, lon) => ({ x: r * Math.cos(lat) * Math.sin(lon), y: r * Math.sin(lat), z: r * Math.cos(lat) * Math.cos(lon) });
+const w = 1024, h = 1024, cx = w / 2, cy = h / 2, s = w * (tile ? 0.33 : 0.4);
+if (tile) {
+  const radius = w * 0.23;
+  ctx.beginPath(); ctx.roundRect(0, 0, w, h, radius); ctx.closePath();
+  const bg = ctx.createRadialGradient(cx, cy * 0.92, 0, cx, cy, w * 0.72);
+  bg.addColorStop(0, "#2a1b0d"); bg.addColorStop(0.55, "#120d08"); bg.addColorStop(1, "#080605");
+  ctx.fillStyle = bg; ctx.fill(); ctx.save(); ctx.clip();
+}
+const proj = p => { const k = 3 / (3 - p.z); return { x: cx + p.x * s * k, y: cy - p.y * s * k, d: (p.z + 1.1) / 2.2 }; };
+const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, s * 0.95);
+core.addColorStop(0, `rgba(255,214,140,${glowAlpha})`); core.addColorStop(0.35, `rgba(233,176,76,${glowAlpha * 0.45})`); core.addColorStop(1, "rgba(233,176,76,0)");
+ctx.fillStyle = core; ctx.beginPath(); ctx.arc(cx, cy, s * 1.05, 0, Math.PI * 2); ctx.fill();
+ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round";
+const yaw = 0.9, pitch = 0.35;
+for (const p of strands) {
+  const a = proj(rot(sph(p.r, p.lat, p.lon), yaw, pitch)), b = proj(rot(sph(p.r, p.lat, p.lon + p.len), yaw, pitch));
+  ctx.strokeStyle = `hsla(${40 + p.b * 8},100%,${55 + p.b * 25}%,${p.b * (0.2 + a.d * 0.8)})`;
+  ctx.lineWidth = (1.6 + p.b * 2.6) * weight; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+}
+for (const r of rings) {
+  ctx.beginPath();
+  for (let i = 0; i <= 96; i++) { const ang = r.s + (r.span * i) / 96; let p = { x: Math.cos(ang) * r.r, y: 0, z: Math.sin(ang) * r.r }; p = rot(rot(p, r.tz, r.tx), yaw * 0.6, pitch); const q = proj(p); i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }
+  ctx.strokeStyle = "rgba(255,214,140,0.5)"; ctx.lineWidth = 3 * weight; ctx.stroke();
+}
+if (tile) { ctx.restore(); ctx.globalCompositeOperation = "source-over"; ctx.beginPath(); ctx.roundRect(1.5, 1.5, w - 3, h - 3, w * 0.23); ctx.strokeStyle = "rgba(233,176,76,0.28)"; ctx.lineWidth = 3; ctx.stroke(); }
+document.title = "done";
+</script></body></html>

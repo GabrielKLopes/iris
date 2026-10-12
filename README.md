@@ -1,11 +1,12 @@
 <p align="center">
-  <img src="docs/images/banner.png" alt="Iris, a assistente que mora no seu PC" width="100%">
+  <img src="docs/images/logo.png" alt="" width="112">
 </p>
 
+<h1 align="center">Iris</h1>
+
 <p align="center">
-  <b>Assistente de voz e de terminal para Windows, em português.</b><br>
-  Ela abre programas, organiza seus arquivos, pesquisa na web e aprende com você,<br>
-  com o modelo <b>iris-1</b> rodando no seu próprio computador.
+  <b>A assistente de voz e de terminal que mora no seu PC.</b><br>
+  Em português, com o modelo próprio <b>iris-1</b> rodando no seu computador.
 </p>
 
 <p align="center">
@@ -13,6 +14,18 @@
   <img alt="Windows 10 e 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-e9b04c?style=flat-square&labelColor=0d0b09">
   <img alt="Python 3.12" src="https://img.shields.io/badge/Python-3.12-e9b04c?style=flat-square&labelColor=0d0b09">
   <img alt="Modelo iris-1" src="https://img.shields.io/badge/modelo-iris--1%209B%20%C2%B7%204B%20%C2%B7%202B-e9b04c?style=flat-square&labelColor=0d0b09">
+</p>
+
+<p align="center">
+  <a href="#instalação">Instalação</a> ·
+  <a href="#também-no-terminal">Terminal</a> ·
+  <a href="#o-modelo-iris-1">Modelo iris-1</a> ·
+  <a href="docs/arquitetura.md">Arquitetura</a> ·
+  <a href="../../releases">Releases</a>
+</p>
+
+<p align="center">
+  <img src="docs/images/banner.png" alt="Página da Iris: a esfera dourada com a ficha técnica 9B, PT-BR e custo zero" width="100%">
 </p>
 
 ---
