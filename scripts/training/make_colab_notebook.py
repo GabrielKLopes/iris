@@ -161,11 +161,33 @@ for question in ["abre o chrome pra mim", "qual a cotação do dólar hoje?", "m
 """),
     md("## 5. Exportar o iris-1 para o Ollama"),
     code("""
+import glob, shutil
+
 model.save_pretrained(f"{OUT}/lora-{SIZE}")
 text_tokenizer.save_pretrained(f"{OUT}/lora-{SIZE}")
-model.save_pretrained_gguf(f"{OUT}/gguf-{SIZE}", text_tokenizer, quantization_method="q4_k_m")
-print("Pronto. Arquivos em", OUT)
-print(f"No seu PC: baixe a pasta gguf-{SIZE} e siga docs/treino.md para carregar no Ollama.")
+
+LOCAL = f"/content/gguf-{SIZE}"
+model.save_pretrained_gguf(LOCAL, text_tokenizer, quantization_method="q4_k_m")
+finais = [f for f in glob.glob("/content/**/*.gguf", recursive=True) if "q4_k_m" in f.lower()]
+extras = glob.glob(f"{LOCAL}*/Modelfile", recursive=True)
+tamanho = sum(os.path.getsize(f) for f in finais + extras)
+print("Gerado:", finais, f"({tamanho / 1024**3:.1f} GB)")
+
+destino = f"{OUT}/gguf-{SIZE}"
+try:
+    os.makedirs(destino, exist_ok=True)
+    for f in finais + extras:
+        shutil.copy(f, destino)
+    print("Copiado para", destino, os.listdir(destino))
+except OSError as erro:
+    print(f"Não deu para copiar para {destino}: {erro}")
+    if IN_COLAB:
+        print("Baixando direto pelo navegador:")
+        for f in finais + extras:
+            files.download(f)
+    else:
+        print("Baixe os arquivos pelo Jupyter Lab:", finais + extras)
+print("No seu PC: siga docs/treino.md para carregar o iris-1.")
 """),
 ]
 

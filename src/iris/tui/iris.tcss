@@ -49,6 +49,18 @@ Screen {
     height: auto;
 }
 
+#usage {
+    color: #a0968a;
+    margin: 1 0 0 0;
+    height: auto;
+}
+
+.spent {
+    margin: 0 0 0 2;
+    color: #4a4239;
+    height: auto;
+}
+
 #facts {
     color: #6f665b;
     margin: 1 0 0 0;

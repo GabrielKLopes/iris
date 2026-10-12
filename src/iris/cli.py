@@ -9,7 +9,7 @@ from iris import __version__
 from iris.application.content_policy import REFUSAL, ContentPolicy
 from iris.config import Settings
 
-COMMANDS = {"chat", "setup", "memory", "library", "desktop"}
+COMMANDS = {"chat", "setup", "memory", "library", "usage", "key", "desktop"}
 DIM, CYAN, RESET = "\033[2m", "\033[36m", "\033[0m"
 
 
@@ -93,31 +93,31 @@ def ask_once(settings: Settings, question: str) -> None:
 
 
 def setup(settings: Settings) -> None:
+    from iris.i18n import LANGUAGES, normalize, tr
     from iris.infrastructure.secrets import ANTHROPIC_KEY, TAVILY_KEY, get_secret, set_secret
-
-    print("Configuração da Iris\n")
-    name = input(f"Como a Iris deve te chamar? [{settings.user_name or 'sem nome'}] ").strip() or settings.user_name
-    if name:
-        save_setting(settings.settings_file, "IRIS_USER_NAME", name)
-    has_key = bool(get_secret(ANTHROPIC_KEY))
-    key = getpass.getpass(
-        "Chave da API da Anthropic (console.anthropic.com > API Keys)"
-        + (" [Enter mantém a atual]: " if has_key else ": ")
-    ).strip()
-    if key:
-        set_secret(ANTHROPIC_KEY, key)
-    has_search = bool(get_secret(TAVILY_KEY))
-    search_key = getpass.getpass(
-        "Chave do Tavily para pesquisa na web, 1.000 buscas grátis por mês (tavily.com)"
-        + (" [Enter mantém a atual]: " if has_search else " [Enter pula e usa o DuckDuckGo]: ")
-    ).strip()
-    if search_key:
-        set_secret(TAVILY_KEY, search_key)
     from iris.tui import terminal_profile
 
+    current = normalize(settings.language)
+    choice = input(f"Language / Idioma: en (English), pt (Português) [{current}] ").strip().lower()[:2]
+    language = choice if choice in LANGUAGES else current
+    save_setting(settings.settings_file, "IRIS_LANGUAGE", language)
+
+    def t(key: str, **values) -> str:
+        return tr(language, key, **values)
+
+    print(f"\n{t('setup.title')}\n")
+    name = input(t("setup.name", current=settings.user_name or t("setup.no_name"))).strip() or settings.user_name
+    if name:
+        save_setting(settings.settings_file, "IRIS_USER_NAME", name)
+    key = getpass.getpass(t("setup.anthropic") + (t("setup.keep") if get_secret(ANTHROPIC_KEY) else t("setup.skip_local"))).strip()
+    if key:
+        set_secret(ANTHROPIC_KEY, key)
+    search_key = getpass.getpass(t("setup.tavily") + (t("setup.keep") if get_secret(TAVILY_KEY) else t("setup.skip_ddg"))).strip()
+    if search_key:
+        set_secret(TAVILY_KEY, search_key)
     if terminal_profile.install():
-        print('\nPerfil "Iris" adicionado ao Windows Terminal: abra pela setinha ao lado das abas.')
-    print("\nPronto. Use `iris` para conversar ou `iris \"sua pergunta\"` para uma resposta rápida.")
+        print(f"\n{t('setup.profile')}")
+    print(f"\n{t('setup.done')}")
 
 
 def save_setting(path: Path, key: str, value: str) -> None:
@@ -170,6 +170,46 @@ def library(settings: Settings, args: list[str]) -> None:
         print("Uso: iris library [list | learn <link, arquivo ou pasta> | search \"pergunta\" | forget <fonte> | reindex]")
 
 
+def usage(settings: Settings) -> None:
+    from iris.application.usage import compact
+    from iris.composition import ledger_for
+
+    ledger = ledger_for(settings)
+    print(f"Uso de tokens de {ledger.user}\n")
+    print(f"{'Período':<16}{'Respostas':>10}{'Entrada':>10}{'Saída':>10}{'Total':>10}")
+    for label, totals in ledger.periods():
+        cost = f"   US$ {totals.cost:.2f}" if totals.cost else ""
+        print(f"{label:<16}{totals.calls:>10}{compact(totals.input_tokens):>10}{compact(totals.output_tokens):>10}{compact(totals.tokens):>10}{cost}")
+
+
+def key(settings: Settings, args: list[str]) -> None:
+    from iris.i18n import tr
+    from iris.infrastructure.secrets import PROVIDERS, delete_secret, get_secret, masked, set_secret
+
+    language = settings.language
+    action = args[0] if args else "list"
+    provider = args[1].lower() if len(args) > 1 else ""
+    if action == "list":
+        print(tr(language, "key.status") + "\n")
+        for name, (secret, _) in PROVIDERS.items():
+            value = get_secret(secret)
+            print(f"  {name:<10} {tr(language, 'key.set') + '  ' + masked(value) if value else tr(language, 'key.unset')}")
+        print("\niris key set <provider>   ·   iris key remove <provider>")
+    elif action in ("set", "remove") and provider in PROVIDERS:
+        secret, site = PROVIDERS[provider]
+        if action == "remove":
+            delete_secret(secret)
+            print(tr(language, "key.removed", provider=provider.title()))
+            return
+        value = getpass.getpass(tr(language, "key.prompt", provider=provider.title(), site=site) + ": ").strip()
+        if value:
+            set_secret(secret, value)
+            print(tr(language, "key.saved", provider=provider.title()))
+    else:
+        print(tr(language, "key.unknown", options=", ".join(PROVIDERS)))
+        print("iris key list   ·   iris key set <provider>   ·   iris key remove <provider>")
+
+
 def desktop() -> None:
     pythonw = Path(sys.executable).with_name("pythonw.exe")
     executable = pythonw if pythonw.exists() else Path(sys.executable)
@@ -189,6 +229,7 @@ def main() -> None:
     parser.add_argument("words", nargs="*", help="pergunta para uma resposta rápida, ou um comando: chat, setup, memory, library, desktop")
     parser.add_argument("--version", action="version", version=f"iris {__version__}")
     parser.add_argument("--simples", action="store_true", help="conversa em texto simples, sem a interface")
+    parser.add_argument("--aqui", action="store_true", help="abre a interface nesta aba, sem trocar para a aba da Iris")
     args = parser.parse_args()
 
     settings = Settings()
@@ -202,14 +243,23 @@ def main() -> None:
         memory(settings, words[1:])
     elif command == "library":
         library(settings, words[1:])
+    elif command == "usage":
+        usage(settings)
+    elif command == "key":
+        key(settings, words[1:])
     elif command == "desktop":
         desktop()
     elif command == "chat" or not words:
         if args.simples or not sys.stdin.isatty() or not sys.stdout.isatty():
             chat(settings)
         else:
+            from iris.tui import terminal_profile
             from iris.tui.app import run
 
+            terminal_profile.install()
+            if not args.aqui and terminal_profile.inside_other_windows_terminal_tab() and terminal_profile.open_iris_tab():
+                print("Abrindo a Iris na aba dela.")
+                return
             run(settings)
     else:
         ask_once(settings, " ".join(words))

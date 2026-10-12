@@ -59,7 +59,7 @@ iris library learn https://docs.docker.com/compose/
 iris memory list
 ```
 
-No terminal, digite `/` para abrir a lista de comandos: `/new`, `/memory`, `/remember`, `/forget`, `/library`, `/learn`, `/model`, `/help`.
+No terminal, digite `/` para abrir a lista de comandos: `/new`, `/memory`, `/remember`, `/forget`, `/library`, `/learn`, `/usage`, `/key`, `/language`, `/help`. A interface vem em inglês e muda com `/language pt`.
 
 ## Sua, de verdade
 
@@ -96,7 +96,8 @@ cd iris
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 cd frontend; npm install; npm run build; cd ..
-.\.venv\Scripts\iris.exe setup      # seu nome, a chave e o buscador
+.\.venv\Scripts\iris.exe setup      # idioma, seu nome e as chaves opcionais
+.\.venv\Scripts\iris.exe key set tavily   # coloca ou troca uma chave a qualquer momento
 .\.venv\Scripts\iris.exe            # terminal
 .\.venv\Scripts\python.exe -m iris  # desktop, a esfera com voz
 ```

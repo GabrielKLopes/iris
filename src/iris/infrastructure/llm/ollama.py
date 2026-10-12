@@ -5,7 +5,7 @@ from typing import Any
 import httpx
 
 from iris.agent.ports import Tool
-from iris.domain.models import LLMResponse, Message, Role, ToolCall
+from iris.domain.models import LLMResponse, Message, Role, ToolCall, Usage
 
 
 def to_ollama_messages(system: str, messages: list[Message]) -> list[dict[str, Any]]:
@@ -43,12 +43,15 @@ class OllamaProvider:
         }
         texts: list[str] = []
         calls: list[ToolCall] = []
+        usage = None
         with self.client.stream("POST", f"{self.host}/api/chat", json=payload) as response:
             response.raise_for_status()
             for line in response.iter_lines():
                 if not line:
                     continue
                 chunk = json.loads(line)
+                if chunk.get("done"):
+                    usage = Usage(input_tokens=chunk.get("prompt_eval_count", 0), output_tokens=chunk.get("eval_count", 0))
                 message = chunk.get("message") or {}
                 if message.get("content"):
                     texts.append(message["content"])
@@ -60,4 +63,4 @@ class OllamaProvider:
                     if isinstance(arguments, str):
                         arguments = json.loads(arguments or "{}")
                     calls.append(ToolCall(uuid.uuid4().hex[:12], function.get("name", ""), arguments))
-        return LLMResponse("".join(texts).strip(), calls)
+        return LLMResponse("".join(texts).strip(), calls, usage)

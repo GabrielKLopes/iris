@@ -635,7 +635,7 @@ def generate_scenarios(
 def run_scenario(scenario: Scenario, api_key: str, base_prompt: str) -> dict:
     persona = PERSONAS[scenario.persona] if scenario.persona is not None else None
     user_name = persona["name"] if persona else random.choice(USER_NAMES)
-    system_prompt = base_prompt.replace("{user}", user_name)
+    system_prompt = base_prompt.replace("{user}", user_name).replace("{language}", "Brazilian Portuguese")
     if "search_library first" not in system_prompt:
         system_prompt += LIBRARY_PROMPT
     if scenario.comms:

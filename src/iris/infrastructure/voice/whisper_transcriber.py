@@ -9,8 +9,15 @@ log = logging.getLogger(__name__)
 HALLUCINATIONS = ("amara.org", "legendas pela comunidade", "inscreva-se", "obrigado por assistir", "legenda adriana")
 
 
+HINTS = {
+    "pt": "Iris, bom dia, boa tarde, boa noite. Abre o Chrome, o Teams, o VS Code, o WhatsApp, o Spotify, o Outlook, o Excel.",
+    "en": "Iris, good morning, good afternoon, good evening. Open Chrome, Teams, VS Code, WhatsApp, Spotify, Outlook, Excel.",
+}
+
+
 class WhisperTranscriber:
-    def __init__(self, model_size: str, download_root: Path, language: str = "pt", hint: str = "Iris, bom dia, boa tarde, boa noite. Abre o Chrome, o Teams, o VS Code, o WhatsApp, o Spotify, o Outlook, o Excel. Azure DevOps, Docker, Kubernetes, Keycloak."):
+    def __init__(self, model_size: str, download_root: Path, language: str = "pt", hint: str | None = None):
+        hint = hint or HINTS.get(language, HINTS["en"])
         self.model_size = model_size
         self.download_root = download_root
         self.language = language

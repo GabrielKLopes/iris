@@ -20,6 +20,7 @@ class AgentLoop:
         recorder: DatasetRecorder,
         system_prompt: str,
         max_steps: int = 8,
+        ledger=None,
     ):
         self.llm = llm
         self.tools = tools
@@ -28,6 +29,7 @@ class AgentLoop:
         self.recorder = recorder
         self.system_prompt = system_prompt
         self.max_steps = max_steps
+        self.ledger = ledger
 
     def run(self, question: str, history: list[Message] | None = None, on_text=None, on_tool=None) -> Interaction:
         started_at = datetime.now(timezone.utc)
@@ -37,6 +39,8 @@ class AgentLoop:
 
         for _ in range(self.max_steps):
             response = self.llm.generate(system, messages, self.tools.all(), on_text=on_text)
+            if self.ledger is not None and response.usage is not None:
+                self.ledger.record(self.llm.model, response.usage)
             messages.append(Message(Role.ASSISTANT, response.text, list(response.tool_calls)))
             if not response.tool_calls:
                 interaction = Interaction(

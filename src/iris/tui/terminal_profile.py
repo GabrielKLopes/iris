@@ -59,6 +59,7 @@ def profile() -> dict:
                 "tabTitle": "Iris",
                 "suppressApplicationTitle": True,
                 "padding": "12",
+                "environment": {"IRIS_TERMINAL": "1"},
             }
         ],
         "schemes": [SCHEME],
@@ -75,6 +76,21 @@ def install() -> Path | None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
     return path
+
+
+def inside_other_windows_terminal_tab() -> bool:
+    return bool(os.environ.get("WT_SESSION")) and os.environ.get("IRIS_TERMINAL") != "1"
+
+
+def open_iris_tab() -> bool:
+    import shutil
+    import subprocess
+
+    wt = shutil.which("wt")
+    if wt is None or fragment_file() is None or not fragment_file().exists():
+        return False
+    subprocess.Popen([wt, "-w", "0", "new-tab", "--profile", "Iris"])
+    return True
 
 
 def set_title(title: str = "Iris") -> None:

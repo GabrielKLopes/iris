@@ -25,7 +25,8 @@ class Settings(BaseSettings):
     data_dir: Path = _default_data_dir()
     app_executable: Path | None = None
     voice_cooldown_seconds: float = 5.0
-    voice_name: str = "pt-BR-FranciscaNeural"
+    language: str = "en"
+    voice_name: str = ""
     whisper_model: str = "base"
     user_name: str = ""
     local_model: str = "iris-1"
@@ -51,6 +52,16 @@ class Settings(BaseSettings):
     @property
     def library_db(self) -> Path:
         return self.data_dir / "knowledge" / "library.db"
+
+    @property
+    def voice(self) -> str:
+        if self.voice_name:
+            return self.voice_name
+        return "pt-BR-FranciscaNeural" if self.language.lower().startswith("pt") else "en-US-AvaNeural"
+
+    @property
+    def usage_db(self) -> Path:
+        return self.data_dir / "usage" / "usage.db"
 
     @property
     def embedding_cache(self) -> Path:

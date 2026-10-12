@@ -2,7 +2,7 @@ import asyncio
 
 from iris.config import Settings
 from iris.domain.models import ToolCall, ToolResult
-from iris.tui.app import IrisApp, ToolLine
+from iris.tui.app import COMMANDS, IrisApp, ToolLine
 
 
 class FakeEngine:
@@ -45,7 +45,7 @@ def test_conversation_streams_shows_tools_and_offers_confirmation(tmp_path):
             await pilot.pause()
             await pilot.click("#yes")
             await app.workers.wait_for_complete()
-            assert app.engine.questions == ["apaga o instalador", "sim, pode"]
+            assert app.engine.questions == ["apaga o instalador", "yes, go ahead"]
 
     asyncio.run(scenario())
 
@@ -59,7 +59,7 @@ def test_slash_commands(tmp_path):
             await pilot.press(*"/memory", "enter")
             await pilot.pause()
             text = " ".join(str(w.render()) for w in app.query("Static"))
-            assert "Guardado como #1" in text
+            assert "Saved as #1" in text
 
             await pilot.press(*"/new", "enter")
             await pilot.pause()
@@ -87,17 +87,38 @@ def test_slash_opens_the_command_menu_and_completes(tmp_path):
         async with app.run_test(size=(110, 40)) as pilot:
             await pilot.click("#prompt")
             await pilot.press("/")
-            assert app.menu_visible() and app.menu().option_count == 10
+            assert app.menu_visible() and app.menu().option_count == len(COMMANDS)
             await pilot.press("r", "e")
             assert app.menu().option_count == 1
             await pilot.press("tab")
             assert app.query_one("#prompt").value == "/remember "
             await pilot.press(*"tenho um gato", "enter")
             await pilot.pause()
-            assert "Guardado como #1" in " ".join(str(w.render()) for w in app.query("Static"))
+            assert "Saved as #1" in " ".join(str(w.render()) for w in app.query("Static"))
 
             await pilot.press("/", "h", "enter")
             await pilot.pause()
             assert not app.menu_visible()
+
+    asyncio.run(scenario())
+
+
+def test_key_command_saves_the_pasted_key(tmp_path, monkeypatch):
+    import iris.infrastructure.secrets as secrets
+
+    vault = {}
+    monkeypatch.setattr(secrets, "set_secret", lambda name, value: vault.__setitem__(name, value))
+    monkeypatch.setattr(secrets, "get_secret", lambda name: vault.get(name))
+
+    async def scenario():
+        app = make_app(tmp_path)
+        app.load_engine = lambda: None
+        async with app.run_test(size=(110, 40)) as pilot:
+            await pilot.click("#prompt")
+            await pilot.press(*"/key tavily", "enter")
+            await pilot.pause()
+            await pilot.press(*"tvly-secret-123", "enter")
+            await pilot.pause()
+            assert vault == {secrets.TAVILY_KEY: "tvly-secret-123"}
 
     asyncio.run(scenario())

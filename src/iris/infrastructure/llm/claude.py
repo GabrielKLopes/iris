@@ -3,7 +3,7 @@ from typing import Any
 import anthropic
 
 from iris.agent.ports import Tool
-from iris.domain.models import LLMResponse, Message, ToolCall
+from iris.domain.models import LLMResponse, Message, ToolCall, Usage
 
 
 def to_api_messages(messages: list[Message]) -> list[dict[str, Any]]:
@@ -27,14 +27,28 @@ def to_api_tools(tools: list[Tool]) -> list[dict[str, Any]]:
     return [{"name": t.name, "description": t.description, "input_schema": t.input_schema} for t in tools]
 
 
-def from_api_response(content: list[Any]) -> LLMResponse:
+def usage_of(response: Any) -> Usage | None:
+    usage = getattr(response, "usage", None)
+    if usage is None:
+        return None
+    server = getattr(usage, "server_tool_use", None)
+    return Usage(
+        input_tokens=getattr(usage, "input_tokens", 0) or 0,
+        output_tokens=getattr(usage, "output_tokens", 0) or 0,
+        cache_read_tokens=getattr(usage, "cache_read_input_tokens", 0) or 0,
+        cache_write_tokens=getattr(usage, "cache_creation_input_tokens", 0) or 0,
+        web_searches=(getattr(server, "web_search_requests", 0) or 0) if server else 0,
+    )
+
+
+def from_api_response(content: list[Any], usage: Usage | None = None) -> LLMResponse:
     texts, calls = [], []
     for block in content:
         if block.type == "text":
             texts.append(block.text)
         elif block.type == "tool_use":
             calls.append(ToolCall(block.id, block.name, dict(block.input)))
-    return LLMResponse("\n".join(texts).strip(), calls)
+    return LLMResponse("\n".join(texts).strip(), calls, usage)
 
 
 def build_request(model: str, max_tokens: int, system: str, messages: list[Message], tools: list[Tool]) -> dict[str, Any]:
@@ -77,5 +91,5 @@ class ClaudeProvider:
                 for text in stream.text_stream:
                     on_text(text)
             response = stream.get_final_message()
-        return from_api_response(response.content)
+        return from_api_response(response.content, usage_of(response))
 

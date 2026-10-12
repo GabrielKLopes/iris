@@ -42,12 +42,14 @@ def _voice(settings: Settings, notices: list[str]):
         from iris.infrastructure.voice.speech_capture import SpeechCapture
         from iris.infrastructure.voice.whisper_transcriber import WhisperTranscriber
 
-        transcriber = WhisperTranscriber(settings.whisper_model, settings.data_dir / "models" / "whisper")
+        from iris.i18n import normalize
+
+        transcriber = WhisperTranscriber(settings.whisper_model, settings.data_dir / "models" / "whisper", language=normalize(settings.language))
         transcriber.preload()
         hint_memory = SQLiteMemory(settings.memory_file)
         transcriber.extra_hint = lambda: " ".join(f.content for f in hint_memory.all()[-30:])
         recognizer = SpeechCapture(transcriber, device=settings.input_device)
-        speaker = NeuralSpeaker(voice=settings.voice_name, fallback=WindowsSpeaker(), device=settings.output_device)
+        speaker = NeuralSpeaker(voice=settings.voice, fallback=WindowsSpeaker(), device=settings.output_device)
         return recognizer, speaker
     except Exception as exc:
         notices.append(f"Voz indisponível: {exc}")

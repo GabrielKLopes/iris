@@ -23,7 +23,9 @@ def system_prompt(settings: Settings, profile: str = DESKTOP) -> str:
     text = prompts.joinpath("system.md").read_text(encoding="utf-8").replace("{user}", settings.user_name or "the user")
     if profile == CLI:
         text += "\n" + prompts.joinpath("cli.md").read_text(encoding="utf-8")
-    return text
+    from iris.i18n import ANSWER_LANGUAGE, normalize
+
+    return text.replace("{language}", ANSWER_LANGUAGE[normalize(settings.language)])
 
 
 def announce(job) -> str:
@@ -181,6 +183,14 @@ def _claude_code_engine(settings: Settings, approver: Approver, window, profile:
     )
 
 
+def ledger_for(settings: Settings):
+    import getpass
+
+    from iris.dataset.usage_ledger import SQLiteUsageLedger
+
+    return SQLiteUsageLedger(settings.usage_db, settings.user_name or getpass.getuser())
+
+
 def _loop_engine(settings: Settings, approver: Approver, window, profile: str, llm, web_search: bool = True):
     from iris.agent.loop import AgentLoop
     from iris.application.conversation import Conversation
@@ -195,6 +205,7 @@ def _loop_engine(settings: Settings, approver: Approver, window, profile: str, l
         recorder=recorder,
         system_prompt=system_prompt(settings, profile),
         max_steps=settings.max_steps,
+        ledger=ledger_for(settings),
     )
     return Conversation(loop)
 
