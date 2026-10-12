@@ -1,0 +1,259 @@
+Screen {
+    background: #0d0b09;
+    color: #efe8dc;
+}
+
+#top {
+    dock: top;
+    height: 3;
+    padding: 1 3 0 3;
+    background: #0d0b09;
+}
+
+#brand {
+    width: auto;
+    color: #e9b04c;
+    text-style: bold;
+}
+
+#spacer {
+    width: 1fr;
+}
+
+#model {
+    width: auto;
+    color: #a0968a;
+}
+
+#log {
+    padding: 0 3 1 3;
+    scrollbar-color: #3a3128;
+    scrollbar-color-hover: #e9b04c;
+    scrollbar-background: #0d0b09;
+    scrollbar-size-vertical: 1;
+}
+
+#welcome {
+    width: 100%;
+    height: auto;
+    align-horizontal: center;
+    padding: 1 0 0 0;
+}
+
+#orb {
+    margin: 0 0 1 0;
+}
+
+#hello {
+    width: 100%;
+    text-align: center;
+    color: #efe8dc;
+    text-style: bold;
+}
+
+#tagline {
+    width: 100%;
+    text-align: center;
+    color: #a0968a;
+    margin: 0 0 2 0;
+}
+
+#suggestions {
+    height: auto;
+    width: auto;
+}
+
+.suggestion {
+    width: 30;
+    height: 5;
+    margin: 0 1;
+    padding: 0 2;
+    background: #0d0b09;
+    color: #d8cfc2;
+    border: round #3a3128;
+    content-align: left middle;
+    text-align: left;
+    text-style: none;
+}
+
+.suggestion:hover, .suggestion:focus {
+    border: round #e9b04c;
+    color: #efe8dc;
+    background: #0d0b09;
+}
+
+.user-row {
+    height: auto;
+    align-horizontal: right;
+    margin: 1 0 0 0;
+}
+
+.bubble {
+    width: auto;
+    max-width: 75%;
+    padding: 1 2;
+    background: #1f1912;
+    color: #efe8dc;
+}
+
+.iris {
+    height: auto;
+    margin: 1 0 0 0;
+}
+
+.iris-label {
+    height: 1;
+    color: #e9b04c;
+    text-style: bold;
+}
+
+.iris Markdown {
+    height: auto;
+    margin: 0;
+    padding: 0 0 0 2;
+    background: #0d0b09;
+}
+
+MarkdownBullet {
+    color: #e9b04c;
+}
+
+MarkdownH1, MarkdownH2, MarkdownH3 {
+    color: #e9b04c;
+    background: #0d0b09;
+}
+
+MarkdownFence {
+    background: #15120e;
+    margin: 1 0;
+    padding: 0 1;
+}
+
+.tool {
+    height: auto;
+    margin: 1 0 0 2;
+    padding: 0 1;
+    color: #a0968a;
+}
+
+.tool.done {
+    color: #8e8758;
+}
+
+.tool.failed {
+    color: #e5644f;
+}
+
+.notice {
+    margin: 1 0 0 2;
+    color: #a0968a;
+    text-style: italic;
+}
+
+#bottom {
+    dock: bottom;
+    height: auto;
+}
+
+#thinking {
+    height: 1;
+    padding: 0 4;
+    color: #e9b04c;
+    display: none;
+}
+
+#thinking.visible {
+    display: block;
+}
+
+#replies {
+    height: auto;
+    padding: 0 3;
+    display: none;
+}
+
+#replies.visible {
+    display: block;
+}
+
+#replies Button {
+    margin: 0 1 0 0;
+    min-width: 16;
+    background: #0d0b09;
+    color: #e9b04c;
+    border: round #3a3128;
+}
+
+#replies Button:hover, #replies Button:focus {
+    background: #e9b04c;
+    color: #1a1206;
+    border: round #e9b04c;
+}
+
+#prompt {
+    margin: 0 3 0 3;
+    padding: 0 1;
+    background: #0d0b09;
+    border: round #3a3128;
+    color: #efe8dc;
+}
+
+#prompt:focus {
+    border: round #e9b04c;
+}
+
+#prompt > .input--placeholder {
+    color: #6f665b;
+}
+
+#prompt > .input--cursor {
+    background: #e9b04c;
+    color: #1a1206;
+}
+
+#status {
+    height: 1;
+    padding: 0 4;
+}
+
+#hints {
+    width: 1fr;
+    color: #6f665b;
+}
+
+#keys {
+    width: auto;
+    color: #6f665b;
+}
+
+ApprovalScreen {
+    align: center middle;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+#approval {
+    width: 72;
+    height: auto;
+    padding: 1 2;
+    background: #15120e;
+    border: round #e9b04c;
+}
+
+#approval-title {
+    color: #e9b04c;
+    text-style: bold;
+}
+
+#approval-detail {
+    color: #efe8dc;
+    margin: 1 0;
+}
+
+#approval-buttons {
+    height: auto;
+    align: right middle;
+}
+
+#approval-buttons Button {
+    margin: 0 0 0 1;
+}

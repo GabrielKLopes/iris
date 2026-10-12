@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+*.egg-info/
+.env
+node_modules/
+src/iris/ui/web/
+dataset/
