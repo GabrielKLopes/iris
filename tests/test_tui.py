@@ -122,3 +122,21 @@ def test_key_command_saves_the_pasted_key(tmp_path, monkeypatch):
             assert vault == {secrets.TAVILY_KEY: "tvly-secret-123"}
 
     asyncio.run(scenario())
+
+
+def test_language_command_switches_the_interface(tmp_path):
+    async def scenario():
+        app = make_app(tmp_path)
+        app.load_engine = lambda: None
+        async with app.run_test(size=(110, 40)) as pilot:
+            await pilot.click("#prompt")
+            await pilot.press(*"/language pt", "enter")
+            await pilot.pause()
+            assert app.language == "pt"
+            assert app.query_one("#prompt").placeholder == "Fale com a Iris…"
+            assert "IRIS_LANGUAGE=pt" in app.settings.settings_file.read_text(encoding="utf-8")
+            await pilot.press(*"/language en", "enter")
+            await pilot.pause()
+            assert app.query_one("#prompt").placeholder == "Talk to Iris…"
+
+    asyncio.run(scenario())

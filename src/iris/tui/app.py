@@ -240,7 +240,7 @@ class IrisApp(App):
     def language(self) -> str:
         return normalize(self.settings.language)
 
-    def t(self, key: str, **values) -> str:
+    def t(self, key: str, /, **values) -> str:
         return tr(self.language, key, **values)
 
     def compose(self) -> ComposeResult:

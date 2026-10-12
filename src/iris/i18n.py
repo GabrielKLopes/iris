@@ -246,7 +246,7 @@ def normalize(language: str | None) -> str:
     return code if code in STRINGS else "en"
 
 
-def tr(language: str | None, key: str, **values) -> str:
+def tr(language: str | None, key: str, /, **values) -> str:
     table = STRINGS[normalize(language)]
     text = table.get(key, STRINGS["en"].get(key, key))
     return text.format(**values) if values else text
