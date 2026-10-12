@@ -114,6 +114,8 @@ print(len(split["train"]), "exemplos de treino,", len(split["test"]), "de avalia
 from trl import SFTConfig, SFTTrainer
 from unsloth.chat_templates import train_on_responses_only
 
+CHECKPOINTS = f"{OUT}/checkpoints-{SIZE}"
+
 trainer = SFTTrainer(
     model=model,
     tokenizer=text_tokenizer,
@@ -130,16 +132,20 @@ trainer = SFTTrainer(
         warmup_ratio=0.05,
         logging_steps=5,
         eval_strategy="epoch",
-        save_strategy="no",
+        save_strategy="steps",
+        save_steps=25,
+        save_total_limit=2,
         optim="adamw_8bit",
         bf16=is_bf16_supported(),
         fp16=not is_bf16_supported(),
-        output_dir="/tmp/checkpoints",
+        output_dir=CHECKPOINTS,
         report_to="none",
     ),
 )
 trainer = train_on_responses_only(trainer, instruction_part="<|im_start|>user\\n", response_part="<|im_start|>assistant\\n")
-trainer.train()
+resume = os.path.isdir(CHECKPOINTS) and any(name.startswith("checkpoint-") for name in os.listdir(CHECKPOINTS))
+print("Continuando de onde parou" if resume else "Começando o treino")
+trainer.train(resume_from_checkpoint=resume or None)
 """),
     md("## 4. Teste rápido"),
     code("""

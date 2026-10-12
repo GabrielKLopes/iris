@@ -113,6 +113,10 @@ def setup(settings: Settings) -> None:
     ).strip()
     if search_key:
         set_secret(TAVILY_KEY, search_key)
+    from iris.tui import terminal_profile
+
+    if terminal_profile.install():
+        print('\nPerfil "Iris" adicionado ao Windows Terminal: abra pela setinha ao lado das abas.')
     print("\nPronto. Use `iris` para conversar ou `iris \"sua pergunta\"` para uma resposta rápida.")
 
 

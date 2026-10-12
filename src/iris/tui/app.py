@@ -45,15 +45,22 @@ TOOL_LABELS = {
 }
 DETAIL_KEYS = ("query", "source", "path", "command", "name", "folder", "pattern", "url", "target", "content", "city")
 SUGGESTIONS = (
-    ("Qual a cotação do dólar hoje?", "pesquisa"),
-    ("Cria um docker-compose com Postgres e Redis", "código"),
-    ("O que tem na minha pasta de Downloads?", "arquivos"),
+    "Qual a cotação do dólar hoje?",
+    "Me ajuda a montar um orçamento do mês",
+    "O que tem na minha pasta de Downloads?",
+    "Explica como funciona o imposto de renda",
 )
-THINKING = "◐◓◑◒"
+SIDE_MIN_WIDTH = 96
+STATES = {
+    "idle": ("esperando", 0.0),
+    "thinking": ("pensando…", 0.6),
+    "answering": ("respondendo", 1.0),
+    "tool": ("trabalhando", 0.8),
+}
 HELP = """**Comandos**
 
 - `/nova` começa uma conversa nova
-- `/memoria` mostra o que ela sabe sobre você · `/lembrar fato` ensina um fato
+- `/memoria` mostra o que ela sabe sobre você · `/lembrar fato` ensina · `/esquecer número` apaga
 - `/biblioteca` lista os sites e documentos aprendidos · `/aprender link, arquivo ou pasta`
 - `/limpar` limpa a tela · `/sair` fecha
 
@@ -133,17 +140,17 @@ class ToolLine(Static):
         self.timer = None
 
     def on_mount(self) -> None:
-        self.update(f"{self.FRAMES[0]} {self.text}")
+        self.update(f"⎿ {self.FRAMES[0]} {self.text}")
         self.timer = self.set_interval(0.08, self.spin)
 
     def spin(self) -> None:
         self.frame = (self.frame + 1) % len(self.FRAMES)
-        self.update(f"{self.FRAMES[self.frame]} {self.text}")
+        self.update(f"⎿ {self.FRAMES[self.frame]} {self.text}")
 
     def finish(self, ok: bool) -> None:
         if self.timer:
             self.timer.stop()
-        self.update(f"{'✓' if ok else '✗'} {self.text}")
+        self.update(f"⎿ {'✓' if ok else '✗'} {self.text}")
         self.add_class("done" if ok else "failed")
 
 
@@ -197,49 +204,54 @@ class IrisApp(App):
         self.last_render = 0.0
         self.tools: dict[str, ToolLine] = {}
         self.awaiting_confirmation = False
+        self.state = "idle"
 
     def compose(self) -> ComposeResult:
-        with Horizontal(id="top"):
-            yield Static("◉ IRIS", id="brand")
-            yield Static("", id="spacer")
-            yield Static("carregando…", id="model")
-        with VerticalScroll(id="log"):
-            with Vertical(id="welcome"):
+        with Horizontal(id="shell"):
+            with Vertical(id="side"):
                 with Center():
-                    yield BrailleOrb(columns=40, rows=14, density=520, id="orb")
-                name = f", {self.settings.user_name}" if self.settings.user_name else ""
-                yield Static(f"Oi{name}.", id="hello")
-                yield Static("Pergunte, peça uma pesquisa ou uma tarefa no seu PC.", id="tagline")
-                with Center():
-                    with Horizontal(id="suggestions"):
-                        for index, (text, kind) in enumerate(SUGGESTIONS):
-                            yield Button(f"{kind}\n{text}", id=f"suggestion-{index}", classes="suggestion")
-        with Vertical(id="bottom"):
-            yield Static("", id="thinking")
-            with Horizontal(id="replies"):
-                yield Button("Sim, pode", id="yes")
-                yield Button("Não", id="no")
-            yield HistoryInput(placeholder="Fale com a Iris…", id="prompt")
-            with Horizontal(id="status"):
-                yield Static("enter envia  ·  ↑ histórico  ·  /ajuda comandos", id="hints")
-                yield Static("ctrl+n nova  ·  ctrl+l limpar  ·  ctrl+c sair", id="keys")
+                    yield BrailleOrb(columns=24, rows=10, density=420, id="orb")
+                yield Static("esperando", id="state")
+                yield Static("", id="side-rule")
+                yield Static("carregando…", id="model")
+                yield Static(self.settings.user_name or "", id="who")
+                yield Static("", id="facts")
+                yield Static(f"iris {__version__}", id="version")
+            with Vertical(id="main"):
+                with VerticalScroll(id="log"):
+                    with Vertical(id="welcome"):
+                        name = f", {self.settings.user_name}" if self.settings.user_name else ""
+                        yield Static(f"Oi{name}.", id="hello")
+                        yield Static("O que você quer fazer agora?", id="tagline")
+                        for index, text in enumerate(SUGGESTIONS):
+                            yield Button(f"› {text}", id=f"suggestion-{index}", classes="suggestion")
+                with Vertical(id="bottom"):
+                    with Horizontal(id="replies"):
+                        yield Button("Sim, pode", id="yes")
+                        yield Button("Não", id="no")
+                    yield HistoryInput(placeholder="Fale com a Iris…", id="prompt")
+                    with Horizontal(id="status"):
+                        yield Static("enter envia  ·  ↑ histórico  ·  /ajuda", id="hints")
+                        yield Static("ctrl+n nova  ·  ctrl+c sair", id="keys")
 
     def on_mount(self) -> None:
         self.query_one("#prompt", Input).focus()
-        self.thinking_frame = 0
-        self.set_interval(0.12, self.animate_thinking)
+        self.fit_side(self.size.width)
         self.load_engine()
+        self.load_counts()
 
-    def animate_thinking(self) -> None:
-        if not self.busy:
-            return
-        self.thinking_frame = (self.thinking_frame + 1) % len(THINKING)
-        self.query_one("#thinking", Static).update(f"{THINKING[self.thinking_frame]} pensando…")
+    def on_resize(self, event) -> None:
+        self.fit_side(event.size.width)
 
-    @on(Button.Pressed, ".suggestion")
-    def suggestion(self, event: Button.Pressed) -> None:
-        index = int(event.button.id.rsplit("-", 1)[1])
-        self.send(SUGGESTIONS[index][0])
+    def fit_side(self, width: int) -> None:
+        self.query_one("#side").display = width >= SIDE_MIN_WIDTH
+
+    def set_state(self, state: str, label: str | None = None) -> None:
+        self.state = state
+        text, energy = STATES[state]
+        self.query_one("#state", Static).update(label or text)
+        self.query_one("#state").set_class(state != "idle", "active")
+        self.query_one("#orb", BrailleOrb).energy = energy
 
     @work(thread=True, exclusive=True, group="engine")
     def load_engine(self) -> None:
@@ -253,13 +265,29 @@ class IrisApp(App):
             return
         backend = self.settings.llm_backend
         if backend == "local":
-            label = f"{self.settings.local_model} · local"
+            label = f"{self.settings.local_model}\nlocal, no seu PC"
         elif backend == "claude_code" or not uses_api(backend):
             label = "Claude Code"
         else:
-            label = f"Claude · {self.settings.api_model}"
+            label = f"Claude\n{self.settings.api_model}"
         self.engine = engine
-        self.call_from_thread(self.query_one("#model", Static).update, f"● {label}")
+        self.call_from_thread(self.query_one("#model", Static).update, label)
+
+    @work(thread=True, group="counts")
+    def load_counts(self) -> None:
+        try:
+            from iris.knowledge.sqlite_memory import SQLiteMemory
+
+            facts = len(SQLiteMemory(self.settings.memory_file).all())
+            import sqlite3
+
+            library = 0
+            if self.settings.library_db.exists():
+                with sqlite3.connect(self.settings.library_db) as db:
+                    library = db.execute("SELECT count(*) FROM sources").fetchone()[0]
+            self.call_from_thread(self.query_one("#facts", Static).update, f"{facts} fatos sobre você\n{library} fontes na biblioteca")
+        except Exception:
+            pass
 
     def log_widget(self) -> VerticalScroll:
         return self.query_one("#log", VerticalScroll)
@@ -272,18 +300,23 @@ class IrisApp(App):
     def add_notice(self, text: str) -> None:
         self.mount_message(Static(text, classes="notice"))
 
+    def iris_block(self, markdown: Markdown) -> Horizontal:
+        return Horizontal(Static("●", classes="dot"), markdown, classes="iris")
+
     def add_iris_text(self, text: str) -> None:
-        self.mount_message(Vertical(Static("◆ iris", classes="iris-label"), Markdown(text), classes="iris"))
+        self.mount_message(self.iris_block(Markdown(text)))
 
     def add_user_text(self, text: str) -> None:
-        self.mount_message(Horizontal(Static(text, classes="bubble"), classes="user-row"))
+        self.mount_message(Horizontal(Static("›", classes="caret"), Static(text, classes="said"), classes="user"))
 
     def start_iris_message(self) -> None:
         self.buffer = ""
         self.current = Markdown("")
-        self.mount_message(Vertical(Static("◆ iris", classes="iris-label"), self.current, classes="iris"))
+        self.mount_message(self.iris_block(self.current))
 
     def stream(self, delta: str) -> None:
+        if not self.buffer:
+            self.call_from_thread(self.set_state, "answering")
         self.buffer += delta
         now = time.monotonic()
         if now - self.last_render > 0.05:
@@ -305,6 +338,7 @@ class IrisApp(App):
         if self.current is not None and not self.buffer.strip():
             self.current.parent.remove()
             self.current = None
+        self.set_state("tool", TOOL_LABELS.get(call.name, "trabalhando").lower())
         line = ToolLine(call)
         self.tools[call.id] = line
         self.mount_message(line)
@@ -315,14 +349,13 @@ class IrisApp(App):
             line.finish(not result.is_error)
         if "Confirmation code" in result.content:
             self.awaiting_confirmation = True
+        self.set_state("thinking")
         if self.current is None or self.buffer.strip():
             self.start_iris_message()
 
     def set_busy(self, busy: bool) -> None:
         self.busy = busy
-        self.query_one("#thinking").set_class(busy, "visible")
-        for orb in self.query(BrailleOrb):
-            orb.energy = 1.0 if busy else 0.0
+        self.set_state("thinking" if busy else "idle")
         self.query_one("#replies").set_class(not busy and self.awaiting_confirmation, "visible")
 
     @on(Input.Submitted, "#prompt")
@@ -337,6 +370,10 @@ class IrisApp(App):
             self.command(text)
             return
         self.send(text)
+
+    @on(Button.Pressed, ".suggestion")
+    def suggestion(self, event: Button.Pressed) -> None:
+        self.send(SUGGESTIONS[int(event.button.id.rsplit("-", 1)[1])])
 
     @on(Button.Pressed, "#yes")
     def confirm_yes(self) -> None:
@@ -378,6 +415,7 @@ class IrisApp(App):
             self.buffer += f"\n\nNão consegui responder: {exc}"
         self.call_from_thread(self.render_buffer)
         self.call_from_thread(self.set_busy, False)
+        self.call_from_thread(self.load_counts)
 
     def command(self, text: str) -> None:
         name, _, arg = text.partition(" ")
@@ -397,6 +435,13 @@ class IrisApp(App):
 
             fact = SQLiteMemory(self.settings.memory_file).remember(arg)
             self.add_notice(f"Guardado como #{fact.id}.")
+            self.load_counts()
+        elif name == "/esquecer" and arg.lstrip("#").isdigit():
+            from iris.knowledge.sqlite_memory import SQLiteMemory
+
+            forgotten = SQLiteMemory(self.settings.memory_file).forget(int(arg.lstrip("#")))
+            self.add_notice("Esquecido." if forgotten else "Não encontrei esse fato. Veja os números com /memoria.")
+            self.load_counts()
         elif name == "/biblioteca":
             self.show_library()
         elif name == "/aprender" and arg:
@@ -426,6 +471,7 @@ class IrisApp(App):
         self.call_from_thread(self.add_notice, f"Aprendendo {source}…")
         result = library_for(self.settings, index_in_background=False).learn(source)
         self.call_from_thread(self.add_notice, result)
+        self.call_from_thread(self.load_counts)
 
     def action_new_chat(self) -> None:
         if self.engine is not None and hasattr(self.engine, "reset"):
@@ -438,10 +484,17 @@ class IrisApp(App):
         for child in list(log.children):
             if child.id != "welcome":
                 child.remove()
-        log.scroll_home(animate=False)
         self.awaiting_confirmation = False
-        self.set_busy(self.busy)
+        self.query_one("#replies").set_class(False, "visible")
+        log.scroll_home(animate=False)
 
 
 def run(settings: Settings) -> None:
+    from iris.tui import terminal_profile
+
+    try:
+        terminal_profile.install()
+    except OSError:
+        pass
+    terminal_profile.set_title()
     IrisApp(settings).run()

@@ -1,65 +1,119 @@
-<p align="center"><img src="assets/iris.png" width="140" alt="Iris"></p>
+<p align="center">
+  <img src="docs/images/banner.png" alt="Iris, a assistente que mora no seu PC" width="100%">
+</p>
 
-# Iris
+<p align="center">
+  <b>Assistente de voz e de terminal para Windows, em português.</b><br>
+  Ela abre programas, organiza seus arquivos, pesquisa na web e aprende com você,<br>
+  com o modelo <b>iris-1</b> rodando no seu próprio computador.
+</p>
 
-Assistente pessoal de voz e de terminal para Windows, em português. Você chama "Iris" e conversa: ela abre programas, toca vídeos no YouTube, mexe nas suas pastas, roda comandos, pesquisa na web, olha a tela e aprende com o uso.
+<p align="center">
+  <img alt="Licença MIT" src="https://img.shields.io/badge/licen%C3%A7a-MIT-e9b04c?style=flat-square&labelColor=0d0b09">
+  <img alt="Windows 10 e 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-e9b04c?style=flat-square&labelColor=0d0b09">
+  <img alt="Python 3.12" src="https://img.shields.io/badge/Python-3.12-e9b04c?style=flat-square&labelColor=0d0b09">
+  <img alt="Modelo iris-1" src="https://img.shields.io/badge/modelo-iris--1%209B%20%C2%B7%204B%20%C2%B7%202B-e9b04c?style=flat-square&labelColor=0d0b09">
+</p>
 
-- **Desktop:** uma esfera flutuante que ouve seu chamado ("Iris", "boa noite, Iris") e responde por voz.
-- **CLI:** o comando `iris` no terminal, para perguntas rápidas, pesquisa e conversa por texto.
+---
 
-## Instalação
+## Fale do jeito que você fala
 
-Baixe a versão desktop ou a CLI na [página de releases](../../releases) e, na primeira vez, configure:
+Chame **“Iris”** (ou “bom dia, Iris”) e peça. Ela age sem narrar cada passo e só pergunta antes do que não dá para desfazer.
 
-```powershell
-iris setup
-```
-
-O setup pergunta seu nome e a chave da API da Anthropic (crie em [console.anthropic.com](https://console.anthropic.com)). A chave fica no Gerenciador de Credenciais do Windows, nunca em arquivo.
-
-## Uso no terminal
-
-```powershell
-iris                       # abre o terminal da Iris (conversa, ferramentas e confirmações na tela)
-iris "qual a previsão do tempo amanhã em Curitiba?"
-iris memory list
-iris library learn https://docs.docker.com/compose/
-iris desktop
-```
-
-No terminal da Iris, `/ajuda` mostra os comandos (`/nova`, `/memoria`, `/biblioteca`, `/aprender`). Use `iris chat --simples` para a conversa em texto puro.
-
-## O que ela faz
-
-| Área | Exemplos |
+| Você diz | A Iris |
 |---|---|
-| Programas e janelas | "abre o VS Code", "fecha a aba do YouTube", "vai pro monitor 2" |
-| YouTube e mídia | "toca Coldplay", "abre o canal do Fabio Akita", "pausa" |
-| Pesquisa | "qual a cotação do dólar hoje?", "o que saiu de novo no Python 3.14?" |
-| Arquivos | "o que tem nos meus downloads?", "apaga os instaladores antigos" (sempre pergunta antes) |
-| Terminal | "qual a branch desse repositório?", "lista os containers" (comandos que alteram algo pedem confirmação) |
-| Tela | "o que tá aparecendo na minha tela?", "clica no segundo vídeo" |
-| Memória | "lembra que meu time joga quinta" e ela usa isso depois |
+| “Abre o VS Code e fecha o Teams” | Abre, fecha e confirma em poucas palavras |
+| “Qual a cotação do dólar hoje?” | Pesquisa na web, lê as páginas e responde com a fonte |
+| “Apaga os instaladores velhos dos Downloads” | Mostra quais são e só manda para a Lixeira depois do seu sim |
+| “Aprende esse site” | Lê a página aberta no navegador e guarda na biblioteca |
+| “Faz uma lista de compras na Área de Trabalho” | Cria o arquivo e diz onde salvou |
+| “Clica no segundo vídeo” | Olha a tela e clica |
+| “Lembra que eu moro em Recife” | Guarda e usa nas próximas conversas |
 
 Pedidos com conteúdo sexual, racismo ou ódio são recusados.
 
-## Desenvolvimento
+## Também no terminal
+
+<p align="center">
+  <img src="docs/images/terminal.png" alt="Terminal da Iris" width="85%">
+</p>
 
 ```powershell
+iris                                        # abre o terminal da Iris
+iris "explica como funciona o imposto de renda"
+iris library learn https://docs.docker.com/compose/
+iris memory list
+```
+
+No terminal, `/ajuda` mostra os comandos: `/nova`, `/memoria`, `/lembrar`, `/biblioteca`, `/aprender`.
+
+## Sua, de verdade
+
+| Fica no seu PC | Vai para a internet só quando precisa |
+|---|---|
+| O modelo iris-1, que entende e responde | Pesquisas na web que você pede |
+| Conversas e o que ela aprende sobre você | Páginas que você manda ela aprender |
+| Arquivos, pastas e a biblioteca de sites salvos | O texto que ela fala, para gerar a voz neural |
+| O áudio do microfone (o reconhecimento de voz é local) | Mensagens para o Claude, se você escolher usar sua chave |
+
+A biblioteca usa busca híbrida (por palavra e por significado) num banco SQLite local. A pesquisa na web usa Tavily, Brave ou um SearXNG seu, com o DuckDuckGo como reserva.
+
+## Escolha pela sua placa de vídeo
+
+<p align="center">
+  <img src="docs/images/versions.png" alt="Versões do iris-1" width="85%">
+</p>
+
+| Versão | Placa de vídeo | Download aproximado |
+|---|---|---|
+| **iris-1 9B** (completa) | 8 GB ou mais | 6 GB |
+| iris-1 4B | 4 a 6 GB | 3 GB |
+| iris-1 2B | não precisa | 1,5 GB |
+
+Prefere não usar a placa? Informe sua chave da API da Anthropic e a Iris responde com o Claude.
+
+## Instalação
+
+> O instalador e o executável da CLI ainda não foram publicados. Acompanhe as [releases](../../releases). Até lá, rode a partir do código:
+
+```powershell
+git clone https://github.com/GabrielKLopes/iris.git
+cd iris
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 cd frontend; npm install; npm run build; cd ..
-.\.venv\Scripts\python.exe -m iris        # desktop
-.\.venv\Scripts\iris.exe chat             # CLI
-.\.venv\Scripts\python.exe -m pytest      # testes
+.\.venv\Scripts\iris.exe setup      # seu nome, a chave e o buscador
+.\.venv\Scripts\iris.exe            # terminal
+.\.venv\Scripts\python.exe -m iris  # desktop, a esfera com voz
+```
+
+## Como funciona
+
+```mermaid
+flowchart LR
+    Voz[Microfone] --> Whisper[Reconhecimento de voz local]
+    Terminal[Terminal] --> Agente
+    Whisper --> Agente[Agente da Iris]
+    Agente <--> Modelo[iris-1 local ou Claude]
+    Agente --> Ferramentas[Programas, arquivos, comandos, tela, web]
+    Agente <--> Memoria[(Memória e biblioteca SQLite)]
+    Agente --> Fala[Voz neural]
 ```
 
 A arquitetura e as decisões estão em [docs/arquitetura.md](docs/arquitetura.md).
 
-## Modelo próprio (iris-1)
+## O modelo iris-1
 
-Toda conversa fica gravada localmente e pode virar exemplo de treino. O notebook [notebooks/train_iris_colab.ipynb](notebooks/train_iris_colab.ipynb) treina o **iris-1** (Qwen3.5 com LoRA, em 9B, 4B ou 2B) no Google Colab ou numa GPU alugada (RunPod, uns US$ 2), e o resultado roda local no [Ollama](https://ollama.com) com `IRIS_LLM_BACKEND=local`, usando a placa de vídeo de quem roda. Detalhes em [docs/treino.md](docs/treino.md).
+O iris-1 é o **Qwen3.5** ajustado com LoRA em conversas no estilo da Iris: falar curto, usar as ferramentas certas, pedir confirmação e entender português falado. O notebook [`notebooks/train_iris_colab.ipynb`](notebooks/train_iris_colab.ipynb) treina no Google Colab ou numa GPU alugada, salva o progresso no Drive e exporta o modelo pronto para rodar local. Detalhes em [docs/treino.md](docs/treino.md).
+
+## Em breve
+
+- [ ] Instalador para Windows e `iris.exe`
+- [ ] Motor embutido, sem precisar instalar o Ollama
+- [ ] E-mail, agenda e WhatsApp, sempre pedindo confirmação antes de enviar
+- [ ] Aprendizado contínuo com as suas avaliações
 
 ## Licença
 
-[MIT](LICENSE)
+[MIT](LICENSE). O modelo base Qwen3.5 tem a própria licença, que acompanha os arquivos do iris-1.
